@@ -14,12 +14,8 @@ from datetime import datetime
 # ══════════════════════════════════════════════
 # CONFIG — paste your Google Sheets URLs once
 # ══════════════════════════════════════════════
-SCORES_URL = (
-    "https://docs.google.com/spreadsheets/d/1Dhja8Arb08DK7xWlqvDPpYOixakD_WIIeP5VGxdbDJY/gviz/tq?tqx=out:csv&sheet=scores"
-)
-SUMMARY_URL = (
-    "https://docs.google.com/spreadsheets/d/1Dhja8Arb08DK7xWlqvDPpYOixakD_WIIeP5VGxdbDJY/gviz/tq?tqx=out:csv&sheet=summary"
-)
+SCORES_URL  = "https://docs.google.com/spreadsheets/d/1Dhja8Arb08DK7xWlqvDPpYOixakD_WIIeP5VGxdbDJY/gviz/tq?tqx=out:csv&sheet=scores"
+SUMMARY_URL = "https://docs.google.com/spreadsheets/d/1Dhja8Arb08DK7xWlqvDPpYOixakD_WIIeP5VGxdbDJY/gviz/tq?tqx=out:csv&sheet=summary"
 
 TIER_COLORS = {"CRITICAL": "#E24B4A", "HIGH": "#EF9F27", "MEDIUM": "#E9C46A", "LOW": "#1D9E75"}
 TIER_BG     = {"CRITICAL": "#4a1515", "HIGH": "#4a3000", "MEDIUM": "#3d3000", "LOW": "#0d3320"}
