@@ -25,6 +25,7 @@ SUMMARY_URL = (
     "https://docs.google.com/spreadsheets/d/1Dhja8Arb08DK7xWlqvDPpYOixakD_WIIeP5VGxdbDJY/gviz/tq?tqx=out:csv&sheet=summary"
 )
 
+
 # ── Colors (consistent with model notebook)
 TIER_COLORS = {
     "CRITICAL": "#E24B4A",
@@ -403,16 +404,18 @@ with col_right:
 
     for sig in macro_signals:
         col_a, col_b = st.columns([2, 1])
+        sig_status = sig["status"]
+        sig_color  = status_colors[sig_status]
         with col_a:
             st.markdown(
                 f"<p style='font-size:0.82rem;color:#6c757d;margin-bottom:0;'>{sig['label']}</p>"
-                f"<p style='font-size:0.75rem;color:{status_colors[sig[\"status\"]]};margin-top:0;'>{sig['note']}</p>",
+                f"<p style='font-size:0.75rem;color:{sig_color};margin-top:0;'>{sig['note']}</p>",
                 unsafe_allow_html=True,
             )
         with col_b:
             st.markdown(
                 f"<p style='font-size:1.1rem;font-weight:600;text-align:right;"
-                f"color:{status_colors[sig[\"status\"]]};margin-bottom:0;'>{sig['value']}</p>",
+                f"color:{sig_color};margin-bottom:0;'>{sig['value']}</p>",
                 unsafe_allow_html=True,
             )
         st.progress(sig["bar"])
