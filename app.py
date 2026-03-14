@@ -41,13 +41,16 @@ MACRO = [
     ("Personal savings",    "3.8%",  "Below 4% — consumers squeezed", "warning", 0.38),
 ]
 
-DARK = dict(
-    plot_bgcolor="#0f1117", paper_bgcolor="#0f1117",
-    font=dict(color="#94a3b8", size=11),
-    margin=dict(l=0, r=0, t=24, b=0),
-    xaxis=dict(gridcolor="#1e2530", linecolor="#2d3748"),
-    yaxis=dict(gridcolor="#1e2530", linecolor="#2d3748"),
-)
+DARK_BG = dict(plot_bgcolor="#0f1117", paper_bgcolor="#0f1117",
+               font=dict(color="#94a3b8", size=11))
+DARK_AXIS = dict(gridcolor="#1e2530", linecolor="#2d3748", tickcolor="#2d3748")
+
+def dl(height=300, margin=None, xaxis=None, yaxis=None, **kwargs):
+    """Build a consistent dark layout without duplicate key errors."""
+    m = margin or dict(l=0, r=0, t=24, b=0)
+    x = {**DARK_AXIS, **(xaxis or {})}
+    y = {**DARK_AXIS, **(yaxis or {})}
+    return dict(**DARK_BG, height=height, margin=m, xaxis=x, yaxis=y, **kwargs)
 
 # ══════════════════════════════════════════════
 # PAGE CONFIG
@@ -280,10 +283,9 @@ with r1a:
             textfont=dict(size=11, color="white"),
             hovertemplate=f"<b>{t}</b><br>Count: {n}<br>Share: {pct:.1f}%<br>Churn rate: {cr[t]}%<extra></extra>",
         ))
-    fig_dist.update_layout(**DARK, height=80, barmode="stack", showlegend=False,
-        margin=dict(l=0,r=0,t=4,b=4),
-        xaxis=dict(range=[0,100], ticksuffix="%", gridcolor="#1e2530"),
-        yaxis=dict(showticklabels=False))
+    fig_dist.update_layout(**dl(height=80, margin=dict(l=0,r=0,t=4,b=4),
+        xaxis=dict(range=[0,100], ticksuffix="%"),
+        yaxis=dict(showticklabels=False)), barmode="stack", showlegend=False)
     st.plotly_chart(fig_dist, use_container_width=True)
 
     # Revenue bar
@@ -295,10 +297,9 @@ with r1a:
         textposition="outside", textfont=dict(size=11, color="#e2e8f0"),
         hovertemplate="<b>%{x}</b><br>$%{y:,.0f}<extra></extra>",
     ))
-    fig_rev.update_layout(**DARK, height=200, showlegend=False,
-        margin=dict(l=0,r=0,t=16,b=0),
-        yaxis=dict(title="Revenue at risk ($)", tickformat="$,.0f", gridcolor="#1e2530"),
-        xaxis=dict(gridcolor="#1e2530"))
+    fig_rev.update_layout(**dl(height=200, margin=dict(l=0,r=0,t=16,b=0),
+        yaxis=dict(title="Revenue at risk ($)", tickformat="$,.0f"),
+        xaxis=dict()), showlegend=False)
     st.plotly_chart(fig_rev, use_container_width=True)
 
 with r1b:
@@ -359,10 +360,9 @@ with r2a:
         textposition="outside", textfont=dict(size=9, color="#94a3b8"),
         hovertemplate="<b>%{y}</b><br>SHAP: %{x:.3f}<extra></extra>",
     ))
-    fig_gs.update_layout(**DARK, height=420,
+    fig_gs.update_layout(**dl(height=420, margin=dict(l=0,r=40,t=8,b=0),
         yaxis=dict(autorange="reversed", tickfont=dict(size=10,color="#cbd5e1")),
-        xaxis=dict(title="Mean |SHAP value|"),
-        margin=dict(l=0,r=40,t=8,b=0), showlegend=False)
+        xaxis=dict(title="Mean |SHAP value|")), showlegend=False)
     st.plotly_chart(fig_gs, use_container_width=True)
 
 with r2b:
@@ -376,14 +376,13 @@ with r2b:
                 xbins=dict(size=5),
                 hovertemplate=f"<b>{t}</b><br>Score: %{{x}}%<br>Count: %{{y}}<extra></extra>",
             ))
-    fig_h.update_layout(**DARK, height=200, barmode="overlay",
-        showlegend=True,
+    fig_h.update_layout(**dl(height=200, margin=dict(l=0,r=0,t=44,b=0),
+        xaxis=dict(title="Churn probability (%)"),
+        yaxis=dict(title="Count")),
+        barmode="overlay", showlegend=True,
         legend=dict(orientation="h", x=0, y=1.2,
                     font=dict(color="#e2e8f0", size=11),
-                    bgcolor="rgba(0,0,0,0)", itemsizing="constant"),
-        xaxis=dict(title="Churn probability (%)"),
-        yaxis=dict(title="Count"),
-        margin=dict(l=0,r=0,t=44,b=0))
+                    bgcolor="rgba(0,0,0,0)", itemsizing="constant"))
     st.plotly_chart(fig_h, use_container_width=True)
 
     st.markdown("**Portfolio composition**")
@@ -465,12 +464,12 @@ if selected != "— Select a customer —" and selected in fd["customer_id"].val
                      annotation_text=f"Base {base_val:.2f}",
                      annotation_font_color="#475569", annotation_font_size=9)
     cust_title = selected.replace("_"," ").lower()
-    fig_wf.update_layout(**DARK, height=380, showlegend=False,
-        title=dict(text=f"Why is {cust_title} flagged?",
-                   font=dict(size=12, color="#94a3b8"), x=0),
+    fig_wf.update_layout(**dl(height=380, margin=dict(l=0,r=40,t=40,b=0),
         xaxis=dict(title="SHAP value (impact on churn score)"),
-        yaxis=dict(autorange="reversed", tickfont=dict(size=10, color="#cbd5e1")),
-        margin=dict(l=0, r=40, t=40, b=0))
+        yaxis=dict(autorange="reversed", tickfont=dict(size=10,color="#cbd5e1"))),
+        showlegend=False,
+        title=dict(text=f"Why is {cust_title} flagged?",
+                   font=dict(size=12,color="#94a3b8"),x=0))
     st.plotly_chart(fig_wf, use_container_width=True)
 
 else:
