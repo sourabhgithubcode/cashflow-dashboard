@@ -626,6 +626,5 @@ col_foot2.caption(
     f"Noise level: {float(s['noise_level'])}"
 )
 col_foot3.caption(
-    "Built by Sourabh Rodagi | "
-    "Inspired by Gene Volchek (EWS) → Charlie Wise (TransUnion R&C)"
+    "Built by Sourabh Rodagi |"
 )
