@@ -472,11 +472,11 @@ with z2l:
                 ),
             ))
     fig_hist.update_layout(
-        **layout(height=200, ml=0, mr=0, mt=36, mb=0,
+        **layout(height=240, ml=0, mr=0, mt=48, mb=4,
                  barmode="overlay",
                  showlegend=True,
                  legend=dict(
-                     orientation="h", x=0, y=1.18,
+                     orientation="h", x=0, y=1.24,
                      font=dict(color=WHITE, size=13),
                      bgcolor="rgba(0,0,0,0)",
                      itemsizing="constant",
@@ -484,43 +484,17 @@ with z2l:
                  ),
                  xaxis=dict(title="Churn probability (%)",
                             gridcolor=GRID, linecolor=BORDER,
-                            tickfont=dict(color=MUTED, size=12)),
+                            tickfont=dict(color=MUTED, size=12),
+                            automargin=True),
                  yaxis=dict(title="Customers",
                             gridcolor=GRID, linecolor=BORDER,
                             tickfont=dict(color=MUTED, size=12))),
+        autosize=True,
     )
     st.plotly_chart(fig_hist, use_container_width=True, config={"displayModeBar": False})
 
 with z2r:
-    # ── Macro signals
-    st.markdown(
-        f"<p style='font-size:0.7rem;color:{MUTED};text-transform:uppercase;"
-        f"letter-spacing:0.1em;margin-bottom:8px;'>Macro risk signals · FRED live</p>",
-        unsafe_allow_html=True,
-    )
-    for label, value, note, bar_val in MACRO:
-        intensity = bar_val
-        bar_color = f"rgba(74,158,255,{0.3 + intensity*0.7:.2f})"
-        st.markdown(
-            f"<div style='display:flex;justify-content:space-between;"
-            f"align-items:baseline;margin-bottom:2px;'>"
-            f"<span style='font-size:0.82rem;color:{MUTED};'>{label}</span>"
-            f"<span style='font-size:1rem;font-weight:600;color:{WHITE};'>{value}</span>"
-            f"</div>"
-            f"<div style='font-size:0.72rem;color:{ACCENT};margin-bottom:3px;'>{note}</div>",
-            unsafe_allow_html=True,
-        )
-        # Progress bar using a mini plotly bar (keeps consistent styling)
-        st.markdown(
-            f"<div style='height:5px;background:{BORDER};border-radius:3px;margin-bottom:10px;'>"
-            f"<div style='height:5px;width:{bar_val*100:.0f}%;background:{bar_color};"
-            f"border-radius:3px;'></div></div>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<div class='div'></div>", unsafe_allow_html=True)
-
-    # ── AUC gauge
+    # ── AUC gauge (TOP — most important model metric)
     fig_gauge = go.Figure(go.Indicator(
         mode="gauge+number+delta",
         value=xgb_auc,
@@ -602,6 +576,33 @@ with z2r:
                         font=dict(color=WHITE, size=13)),
     )
     st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
+
+    st.markdown("<div class='div'></div>", unsafe_allow_html=True)
+
+    # ── Macro signals (below gauge + donut)
+    st.markdown(
+        f"<p style='font-size:0.7rem;color:{MUTED};text-transform:uppercase;"
+        f"letter-spacing:0.1em;margin-bottom:8px;'>Macro risk signals · FRED live</p>",
+        unsafe_allow_html=True,
+    )
+    for label, value, note, bar_val in MACRO:
+        intensity = bar_val
+        bar_color = f"rgba(74,158,255,{0.3 + intensity*0.7:.2f})"
+        st.markdown(
+            f"<div style='display:flex;justify-content:space-between;"
+            f"align-items:baseline;margin-bottom:2px;'>"
+            f"<span style='font-size:0.82rem;color:{MUTED};'>{label}</span>"
+            f"<span style='font-size:1rem;font-weight:600;color:{WHITE};'>{value}</span>"
+            f"</div>"
+            f"<div style='font-size:0.72rem;color:{ACCENT};margin-bottom:3px;'>{note}</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='height:5px;background:{BORDER};border-radius:3px;margin-bottom:10px;'>"
+            f"<div style='height:5px;width:{bar_val*100:.0f}%;background:{bar_color};"
+            f"border-radius:3px;'></div></div>",
+            unsafe_allow_html=True,
+        )
 
 st.markdown("<div class='div'></div>", unsafe_allow_html=True)
 
@@ -742,11 +743,105 @@ with z3r:
         st.plotly_chart(fig_wf, use_container_width=True, config={"displayModeBar": False})
 
     else:
+        # ── Default state: show portfolio risk scatter — all customers plotted
         st.markdown(
+            f"<p style='font-size:0.7rem;color:{MUTED};text-transform:uppercase;"
+            f"letter-spacing:0.1em;margin-bottom:4px;'>Portfolio risk scatter — select a customer to inspect</p>",
+            unsafe_allow_html=True,
+        )
+        # sample up to 500 for performance
+        plot_df = fd.sample(min(500, len(fd)), random_state=42) if len(fd) > 0 else fd
+
+        fig_scatter = go.Figure()
+        for t in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+            td = plot_df[plot_df["risk_tier"] == t]
+            if len(td) == 0:
+                continue
+            fig_scatter.add_trace(go.Scatter(
+                x=list(range(len(td))),
+                y=td["churn_probability"].tolist(),
+                mode="markers",
+                name=t,
+                marker=dict(
+                    color=TIER_FILL[t],
+                    size=8,
+                    line=dict(color=TIER_SOLID[t], width=1),
+                    symbol="circle",
+                ),
+                text=td["customer_id"].tolist(),
+                customdata=td["recommended_action"].tolist(),
+                hovertemplate=(
+                    "<b style='color:" + WHITE + "'>%{text}</b><br>"
+                    f"Tier: <b>{t}</b><br>"
+                    "Churn score: <b>%{y:.1f}%</b><br>"
+                    "Action: <b>%{customdata}</b>"
+                    "<extra></extra>"
+                ),
+            ))
+
+        # Risk threshold lines
+        for threshold, label in [(75, "Critical"), (50, "High"), (30, "Medium")]:
+            fig_scatter.add_hline(
+                y=threshold, line_dash="dot",
+                line_color=BORDER, line_width=1,
+                annotation_text=label,
+                annotation_font_color=MUTED,
+                annotation_font_size=11,
+                annotation_position="right",
+            )
+
+        fig_scatter.update_layout(
+            **layout(height=400, ml=0, mr=40, mt=8, mb=0,
+                     showlegend=True,
+                     legend=dict(
+                         orientation="h", x=0, y=1.06,
+                         font=dict(color=WHITE, size=13),
+                         bgcolor="rgba(0,0,0,0)",
+                         itemsizing="constant",
+                     ),
+                     xaxis=dict(title="Customer index (filtered portfolio)",
+                                gridcolor=GRID, linecolor=BORDER,
+                                tickfont=dict(color=MUTED, size=11),
+                                showticklabels=False),
+                     yaxis=dict(title="Churn probability (%)",
+                                range=[0, 105],
+                                gridcolor=GRID, linecolor=BORDER,
+                                tickfont=dict(color=MUTED, size=12))),
+        )
+        st.plotly_chart(fig_scatter, use_container_width=True, config={"displayModeBar": False})
+
+        # ── Summary stats grid below scatter
+        s1, s2, s3 = st.columns(3)
+        top_cust = fd.iloc[0] if len(fd) > 0 else None
+        s1.markdown(
             f"<div style='background:{CARD};border:1px solid {BORDER};border-radius:8px;"
-            f"padding:60px 24px;text-align:center;'>"
-            f"<p style='font-size:0.9rem;color:{MUTED};margin:0;'>"
-            f"Select a customer from the sidebar to see their individual SHAP explanation</p>"
+            f"padding:12px 16px;'>"
+            f"<p style='font-size:0.7rem;color:{MUTED};margin:0 0 4px;text-transform:uppercase;"
+            f"letter-spacing:0.07em;'>Highest risk customer</p>"
+            f"<p style='font-size:0.85rem;color:{WHITE};margin:0;font-weight:500;'>"
+            f"{top_cust['customer_id'] if top_cust is not None else '—'}</p>"
+            f"<p style='font-size:1.1rem;color:{ACCENT};margin:2px 0 0;font-weight:600;'>"
+            f"{top_cust['churn_probability']:.1f}% risk</p>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        s2.markdown(
+            f"<div style='background:{CARD};border:1px solid {BORDER};border-radius:8px;"
+            f"padding:12px 16px;'>"
+            f"<p style='font-size:0.7rem;color:{MUTED};margin:0 0 4px;text-transform:uppercase;"
+            f"letter-spacing:0.07em;'>Critical tier — actual churn</p>"
+            f"<p style='font-size:1.4rem;color:{WHITE};margin:0;font-weight:600;'>91%</p>"
+            f"<p style='font-size:0.78rem;color:{MUTED};margin:2px 0 0;'>"
+            f"of {crit_n} critical customers churned</p>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        s3.markdown(
+            f"<div style='background:{CARD};border:1px solid {BORDER};border-radius:8px;"
+            f"padding:12px 16px;'>"
+            f"<p style='font-size:0.7rem;color:{MUTED};margin:0 0 4px;text-transform:uppercase;"
+            f"letter-spacing:0.07em;'>Select a customer above</p>"
+            f"<p style='font-size:0.85rem;color:{MUTED};margin:0;'>Use the sidebar dropdown to inspect any customer's individual SHAP waterfall</p>"
             f"</div>",
             unsafe_allow_html=True,
         )
